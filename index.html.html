@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ponto Digital - Hidros Consultoria</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            hidros: {
+              yellow: '#FFD500',
+              yellowHover: '#e6c000',
+              dark: '#08090b',
+              card: '#121418',
+              cardBorder: '#232730',
+              muted: '#8e95a5'
+            }
+          },
+          fontFamily: {
+            sans: ['Poppins', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Audio Feedback Library (Tone.js) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  
+  <!-- Google Identity Services (Google Workspace) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  
+  <!-- Google Fonts: Poppins (Manual da Marca Hidros) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #08090b;
+      color: #ffffff;
+    }
+    .font-mono-time {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d0f12;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #232730;
+      border-radius: 4px;
+    }
+    .hidros-gradient-glow {
+      background: radial-gradient(circle, rgba(255, 213, 0, 0.12) 0%, rgba(255, 213, 0, 0) 70%);
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 4px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#08090b] text-white antialiased selection:bg-[#FFD500] selection:text-black">
+
+  <!-- HEADER -->
+  <header class="border-b border-[#232730] bg-[#121418]/95 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3 flex items-center justify-between">
+      
+      <!-- LOGO OFICIAL HIDROS CONSULTORIA -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-full bg-[#FFD500] flex items-center justify-center p-1 shadow-lg shadow-[#FFD500]/20 shrink-0">
+          <svg viewBox="0 0 100 100" class="w-full h-full text-black" fill="currentColor">
+            <path d="M 28 15 L 38 15 L 42 22 L 42 85 L 28 85 Z" />
+            <path d="M 58 22 L 62 15 L 72 15 L 72 85 L 58 85 Z" />
+            <path d="M 42 52 L 58 52 L 58 63 L 42 63 Z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-base sm:text-lg font-bold tracking-tight text-white">Hidros</span>
+            <span class="text-xs font-semibold uppercase tracking-widest text-[#FFD500]">Consultoria</span>
+          </div>
+          <p class="text-[11px] text-gray-400 font-medium">Controle de Frequência &amp; Plantões (GP)</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5 sm:gap-4">
+        <!-- Status de Conexão com Google Sheets -->
+        <button id="btnOpenSheetsConfig" class="flex items-center gap-2 bg-[#1c2028] hover:bg-[#282d38] px-3 py-1.5 rounded-xl border border-[#2d3340] text-xs text-gray-300 transition" title="Configurar Planilha Sheets">
+          <span id="sheetsStatusDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span id="sheetsStatusText" class="hidden md:inline font-medium">Sheets: Não Conectado</span>
+          <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+
+        <!-- Identificação do Membro pelo E-mail Institucional -->
+        <div id="userProfileBadge" class="flex items-center gap-2.5 bg-[#171a21] border border-[#2d3340] rounded-2xl px-3 py-1.5 cursor-pointer hover:border-[#FFD500]/50 transition" title="Clique para trocar de e-mail">
+          <div id="userAvatarContainer" class="w-8 h-8 rounded-xl overflow-hidden bg-[#FFD500] text-black flex items-center justify-center font-bold text-xs shrink-0">
+            <span id="userAvatarText">@</span>
+          </div>
+          <div class="text-left hidden sm:block max-w-[190px]">
+            <div id="currentUserEmailDisplay" class="text-xs font-bold text-white truncate">Identifique seu e-mail</div>
+            <div id="currentUserStatusSubtitle" class="text-[10px] text-[#FFD500] truncate">Nome e Semana automáticos</div>
+          </div>
+          <button id="btnLogout" class="hidden p-1.5 rounded-lg text-gray-400 hover:text-rose-400 transition ml-1" title="Trocar e-mail">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- COLUNA ESQUERDA: RELÓGIO, CONFIGURAÇÃO DO PLANTÃO E AÇÕES -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- CARD DO RELÓGIO COM IDENTIDADE HIDROS -->
+        <div class="relative overflow-hidden rounded-3xl bg-[#121418] p-6 sm:p-7 border border-[#232730] shadow-2xl">
+          <div class="absolute -right-16 -top-16 w-52 h-52 hidros-gradient-glow pointer-events-none"></div>
+
+          <!-- Status da Jornada e Data Automática -->
+          <div class="flex justify-between items-center mb-4">
+            <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#1c2028] text-gray-400 border border-[#2b313d]">
+              <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+              <span>Jornada Não Iniciada</span>
+            </div>
+            <div class="text-right">
+              <div id="autoDayOfWeekBadge" class="text-xs font-bold text-[#FFD500]">
+                Segunda-feira
+              </div>
+              <div id="todayDateDisplay" class="text-[10px] text-gray-400 font-medium">
+                --/--/----
+              </div>
+            </div>
+          </div>
+
+          <!-- Relógio Principal -->
+          <div class="text-center my-3">
+            <div id="liveClock" class="text-5xl sm:text-6xl font-bold font-mono-time tracking-tight text-white drop-shadow-md">
+              00:00:00
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 flex items-center justify-center gap-1.5 font-medium">
+              <span class="w-2 h-2 rounded-full bg-[#FFD500]"></span>
+              Horário Oficial Hidros Consultoria
+            </p>
+          </div>
+
+          <!-- SELEÇÃO DE E-MAIL E HORÁRIO DE PLANTÃO (FLUXO ULTRA-RÁPIDO SEM ESCOLHA DE SEMANA) -->
+          <div class="my-5 p-4 rounded-2xl bg-[#0c0e12] border border-[#232730] space-y-3">
+            
+            <!-- Campo de E-mail do Membro -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="inputQuickEmail" class="block text-[11px] font-semibold text-gray-300">
+                  Seu E-mail Institucional:
+                </label>
+                <span class="text-[10px] text-[#FFD500]">Nome e Semana automáticos</span>
+              </div>
+              <div class="relative">
+                <input type="email" id="inputQuickEmail" placeholder="ex: danilo@hidrosconsultoria.com.br" class="w-full bg-[#161920] border border-[#2d3340] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#FFD500] transition">
+                <span class="absolute left-3 top-2 text-gray-500 text-xs font-mono">@</span>
+              </div>
+            </div>
+
+            <!-- Quadro de Horários de Plantão -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="selectShiftSlot" class="block text-[11px] font-semibold text-gray-300">
+                  Qual seu horário de plantão?
+                </label>
+                <span id="shiftToleranceStatus" class="text-[10px] px-2 py-0.2 rounded font-semibold bg-gray-800 text-gray-400">Tolerância: 10 min</span>
+              </div>
+              <select id="selectShiftSlot" class="w-full bg-[#161920] border border-[#2d3340] rounded-xl px-3 py-2 text-xs text-[#FFD500] font-medium focus:outline-none focus:border-[#FFD500] transition">
+                <option value="" data-start="" data-end="">Selecione seu bloco de plantão...</option>
+                <option value="M3-M4" data-start="08:50" data-end="10:40">M3-M4 — 08:50 a 10:40</option>
+                <option value="M4-M5" data-start="09:40" data-end="11:30">M4-M5 — 09:40 a 11:30</option>
+                <option value="M5-M6" data-start="10:40" data-end="12:30">M5-M6 — 10:40 a 12:30</option>
+                <option value="M6-T1" data-start="11:30" data-end="13:20">M6-T1 — 11:30 a 13:20</option>
+                <option value="T1-T2" data-start="12:30" data-end="14:20">T1-T2 — 12:30 a 14:20</option>
+                <option value="T2-T3" data-start="13:20" data-end="15:10">T2-T3 — 13:20 a 15:10</option>
+                <option value="T3-T4" data-start="14:20" data-end="16:10">T3-T4 — 14:20 a 16:10</option>
+                <option value="T4-T5" data-start="15:10" data-end="17:00">T4-T5 — 15:10 a 17:00</option>
+                <option value="T5-T6" data-start="16:10" data-end="18:00">T5-T6 — 16:10 a 18:00</option>
+                <option value="RG" data-start="18:00" data-end="21:00">RG — Reunião Geral / Evento</option>
+              </select>
+            </div>
+
+            <!-- Alerta Automático de Atraso (> 10min) -->
+            <div id="autoLateAlert" class="hidden p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-start gap-2">
+              <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <span class="font-bold block">Tolerância de 10 min ultrapassada!</span>
+                <span id="autoLateDetailText" class="text-[10px] text-amber-200/90 block">Atraso registrado automaticamente na planilha. Justificativa obrigatória.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status de Localização / Geofence da Sede Hidros (OBRIGATÓRIO NO CORE) -->
+          <div id="geoStatusCard" class="py-3 px-3.5 rounded-2xl bg-[#0c0e12] border border-[#232730] flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2.5 truncate">
+              <span id="geoStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
+              <div class="truncate">
+                <div class="flex items-center gap-1.5">
+                  <span id="geoStatusText" class="text-gray-300 font-medium block truncate">Verificando GPS...</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider bg-[#FFD500]/15 text-[#FFD500] border border-[#FFD500]/30 shrink-0">Sede UERJ Obrigatória</span>
+                </div>
+                <span id="geoDistanceText" class="text-[10px] text-gray-500 block truncate">Sede: UERJ Bloco F (Sala 5061) • Raio: 350m</span>
+              </div>
+            </div>
+            <button type="button" id="btnRefreshLocation" class="text-[11px] text-[#FFD500] hover:text-[#e6c000] font-bold px-2 py-1 rounded-lg bg-[#FFD500]/10 border border-[#FFD500]/20 shrink-0 ml-2 transition" title="Recarregar GPS">
+              ↻ GPS
+            </button>
+          </div>
+
+          <!-- BOTÕES PRINCIPAIS DE REGISTRO -->
+          <div class="mt-6 space-y-3">
+            
+            <!-- BOTÃO 1: ENTRADA -->
+            <button id="btnPunchEntrada" data-type="ENTRADA" class="w-full relative group overflow-hidden py-3.5 px-6 rounded-2xl bg-[#FFD500] hover:bg-[#e6c000] text-black font-bold text-base shadow-lg shadow-[#FFD500]/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+              <span class="absolute inset-0 w-full h-full bg-white/20 group-hover:translate-x-full transition-transform duration-500 -skew-x-12 -translate-x-full"></span>
+              <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+              <span id="btnEntradaLabel" class="tracking-wide">Bater Ponto: ENTRADA</span>
+              <span id="badgeSuggestEntrada" class="hidden text-[10px] bg-black text-[#FFD500] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ml-1 shadow-sm">Sugerido</span>
+            </button>
+
+            <!-- BOTÃO 2: SAÍDA -->
+            <button id="btnPunchSaida" data-type="SAIDA" class="w-full relative group overflow-hidden py-3.5 px-6 rounded-2xl bg-[#1c2028] hover:bg-[#282d38] border border-[#2d3340] text-white font-bold text-base hover:border-[#FFD500]/40 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+              <svg class="w-5 h-5 text-[#FFD500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span class="tracking-wide">Bater Ponto: SAÍDA</span>
+              <span id="badgeSuggestSaida" class="hidden text-[10px] bg-[#FFD500] text-black font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ml-1 shadow-sm">Sugerido</span>
+            </button>
+
+            <!-- BOTÃO 3: REGISTRAR FALTA -->
+            <button id="btnOpenFaltaModal" type="button" class="w-full py-2.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-semibold text-xs transition flex items-center justify-center gap-2">
+              <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>Não compareci ao plantão? Registrar FALTA</span>
+            </button>
+
+            <!-- CARD DE JUSTIFICATIVA DE ATRASO / MOTIVO -->
+            <div class="pt-2">
+              <div id="lateToggleCard" class="p-3.5 rounded-2xl border border-[#262b36] bg-[#0c0e12] hover:border-[#FFD500]/40 transition">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-[#FFD500]/15 text-[#FFD500] flex items-center justify-center">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="text-xs font-bold text-white">Declarar Atraso / Justificativa</p>
+                      <p class="text-[10px] text-gray-400">Obrigatório em atrasos superiores a 10 min</p>
+                    </div>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="checkIsLate" class="sr-only peer">
+                    <div class="w-9 h-5 bg-[#1e232c] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-black after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FFD500] peer-checked:after:bg-black"></div>
+                  </label>
+                </div>
+
+                <div id="lateDetailsBlock" class="hidden mt-3 pt-3 border-t border-[#232730] space-y-2.5">
+                  <p class="text-[11px] font-semibold text-[#FFD500]">Selecione a Justificativa Oficial da Hidros:</p>
+                  
+                  <div class="max-h-44 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin" id="lateReasonListContainer"></div>
+
+                  <input type="text" id="lateReasonCustom" placeholder="Detalhes da justificativa (ex: prova de Mecânica, linha de ônibus atrasada...)" class="w-full bg-[#181b22] border border-[#2b313d] rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#FFD500] transition">
+                </div>
+              </div>
+            </div>
+
+            <!-- Observação Regular -->
+            <div class="pt-1">
+              <input type="text" id="punchNoteInput" placeholder="Observações adicionais (ex: Reunião com cliente, visita técnica...)" class="w-full bg-[#0c0e12] border border-[#232730] rounded-xl px-3.5 py-2 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#FFD500] transition-colors">
+            </div>
+          </div>
+        </div>
+
+        <!-- JORNADA DE HOJE -->
+        <div class="rounded-3xl bg-[#121418] border border-[#232730] p-6 shadow-xl backdrop-blur-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span class="w-1.5 h-3.5 bg-[#FFD500] rounded-full"></span>
+              Minha Jornada Hoje
+            </h3>
+            <div class="text-xs bg-[#1a1d24] text-[#FFD500] font-semibold px-2.5 py-1 rounded-md border border-[#2b303d]">
+              Total: <span id="totalWorkedToday" class="font-mono text-white">00h 00m</span>
+            </div>
+          </div>
+
+          <div id="todayTimeline" class="space-y-2.5"></div>
+        </div>
+      </div>
+
+      <!-- COLUNA DIREITA: INTEGRAÇÃO SHEETS E TABELA DE REGISTROS -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- GOOGLE SHEETS BANNER COM IDENTIDADE HIDROS -->
+        <div id="sheetsSyncAlert" class="rounded-2xl p-4 border transition flex items-center justify-between bg-[#121418] border-[#232730]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-[#FFD500]/15 text-[#FFD500] flex items-center justify-center shrink-0 font-bold">
+              H
+            </div>
+            <div>
+              <p id="sheetsAlertTitle" class="text-xs font-bold text-white">Integração com Planilha da Hidros</p>
+              <p id="sheetsAlertDesc" class="text-[11px] text-gray-400">O membro informa apenas e-mail e plantão. Nome e Semana são preenchidos automaticamente na planilha.</p>
+            </div>
+          </div>
+          <button id="btnBannerConfig" class="text-xs font-bold px-3.5 py-2 rounded-xl bg-[#FFD500] hover:bg-[#e6c000] text-black transition shrink-0 ml-3">
+            Configurar
+          </button>
+        </div>
+
+        <!-- TABELA DE REGISTROS -->
+        <div class="rounded-3xl bg-[#121418] border border-[#232730] p-6 shadow-xl backdrop-blur-sm flex flex-col min-h-[520px]">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#232730]">
+            <div>
+              <h2 class="text-base font-bold text-white tracking-tight">Histórico de Presença &amp; Plantões</h2>
+              <p class="text-xs text-gray-400">Registros em tempo real vinculados à planilha oficial de GP</p>
+            </div>
+            
+            <button id="btnExportCsv" class="px-3.5 py-2 rounded-xl bg-[#1c2028] hover:bg-[#282d38] text-xs font-semibold text-white border border-[#2d3340] transition flex items-center gap-2 self-start sm:self-auto">
+              <svg class="w-4 h-4 text-[#FFD500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Exportar (.CSV)
+            </button>
+          </div>
+
+          <!-- Filtros de Busca -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 my-4">
+            <div class="relative sm:col-span-1">
+              <input type="text" id="filterSearch" placeholder="Buscar e-mail ou motivo..." class="w-full bg-[#0c0e12] border border-[#232730] rounded-xl pl-8 pr-2.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#FFD500]">
+              <svg class="w-3.5 h-3.5 text-gray-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            <div>
+              <select id="filterType" class="w-full bg-[#0c0e12] border border-[#232730] rounded-xl px-2.5 py-2 text-xs text-gray-300 focus:outline-none focus:border-[#FFD500]">
+                <option value="ALL">Todos os Tipos</option>
+                <option value="ENTRADA">Entrada</option>
+                <option value="ENTRADA_ATRASO">Entrada c/ Atraso</option>
+                <option value="SAIDA">Saída</option>
+                <option value="FALTA">Faltas</option>
+              </select>
+            </div>
+
+            <div>
+              <input type="date" id="filterDate" class="w-full bg-[#0c0e12] border border-[#232730] rounded-xl px-2.5 py-2 text-xs text-gray-300 focus:outline-none focus:border-[#FFD500]">
+            </div>
+          </div>
+
+          <!-- Tabela de Presença -->
+          <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-[#0c0e12] text-gray-400 font-semibold border-b border-[#232730]">
+                <tr>
+                  <th class="py-3 px-3">Data / Hora</th>
+                  <th class="py-3 px-3">E-mail Institucional</th>
+                  <th class="py-3 px-3">Plantão</th>
+                  <th class="py-3 px-3">Tipo</th>
+                  <th class="py-3 px-3">Atraso?</th>
+                  <th class="py-3 px-3">Justificativa</th>
+                  <th class="py-3 px-3 text-center">Sheets</th>
+                  <th class="py-3 px-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="punchesTableBody" class="divide-y divide-[#1e222b] text-gray-300"></tbody>
+            </table>
+          </div>
+
+          <div id="tableEmptyState" class="hidden flex-col items-center justify-center py-12 text-center text-gray-500">
+            <p class="text-sm font-medium">Nenhum registro encontrado para este filtro.</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODAL: REGISTRAR FALTA -->
+  <div id="faltaModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-[#121418] border border-rose-500/30 rounded-3xl w-full max-w-lg p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button id="btnCloseFaltaModal" class="absolute top-5 right-5 text-gray-400 hover:text-white p-1 rounded-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-sm">
+          ⚠️
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Registro de FALTA no Plantão</h3>
+          <p class="text-xs text-gray-400">É obrigatório selecionar uma justificativa oficial.</p>
+        </div>
+      </div>
+
+      <div class="space-y-4 my-3 text-xs text-gray-300">
+        <div class="p-3 bg-[#0c0e12] rounded-xl border border-[#232730] space-y-1">
+          <p><span class="text-gray-400">Membro (E-mail):</span> <span id="faltaModalEmail" class="font-bold text-[#FFD500]">-</span></p>
+          <p><span class="text-gray-400">Dia de hoje:</span> <span id="faltaModalDay" class="font-bold text-white">-</span></p>
+          <p><span class="text-gray-400">Plantão:</span> <span id="faltaModalSlot" class="font-bold text-white">-</span></p>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-[#FFD500] mb-2">Motivo da Falta (Justificativa Oficial):</label>
+          <div class="max-h-48 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin" id="faltaReasonListContainer"></div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-gray-300 mb-1">Detalhamento complementar:</label>
+          <textarea id="faltaCustomNote" rows="2" placeholder="Descreva brevemente a situação ou motivo da ausência..." class="w-full bg-[#181b22] border border-[#2b313d] rounded-xl p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#FFD500]"></textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-3 justify-end pt-3 border-t border-[#232730]">
+        <button id="btnCancelFalta" class="px-4 py-2.5 rounded-xl bg-[#1c2028] hover:bg-[#282d38] text-gray-300 text-xs font-semibold transition">
+          Cancelar
+        </button>
+        <button id="btnConfirmFalta" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-lg shadow-rose-900/30">
+          Confirmar Registro de Falta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SELECIONAR OU ALTERAR E-MAIL INSTITUCIONAL -->
+  <div id="emailModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-[#121418] border border-[#232730] rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-center">
+      <button id="btnCloseEmailModal" class="absolute top-5 right-5 text-gray-400 hover:text-white p-1 rounded-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div class="w-14 h-14 rounded-full bg-[#FFD500] text-black flex items-center justify-center mx-auto mb-3 font-bold text-xl shadow-lg shadow-[#FFD500]/20">
+        @
+      </div>
+
+      <h3 class="text-lg font-bold text-white mb-1">Identificação do Membro</h3>
+      <p class="text-xs text-[#FFD500] font-semibold mb-2">Hidros Consultoria</p>
+      <p class="text-xs text-gray-400 mb-5">Informe seu e-mail institucional. O seu nome e semana do mês serão vinculados automaticamente na planilha.</p>
+
+      <div class="space-y-3 text-left">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-300 mb-1">E-mail Corporativo (@hidrosconsultoria.com.br):</label>
+          <input type="email" id="modalInputEmail" placeholder="seu.nome@hidrosconsultoria.com.br" class="w-full bg-[#181b22] border border-[#2b313d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#FFD500]">
+        </div>
+
+        <button id="btnSaveEmail" type="button" class="w-full py-2.5 rounded-xl bg-[#FFD500] hover:bg-[#e6c000] text-black text-xs font-bold transition">
+          Salvar E-mail no Dispositivo
+        </button>
+
+        <div class="pt-4 border-t border-[#232730]">
+          <p class="text-[11px] font-semibold text-gray-400 mb-2">Ou selecione um membro cadastrado:</p>
+          <div class="space-y-1.5">
+            <button type="button" onclick="setQuickEmail('danilo@hidrosconsultoria.com.br')" class="w-full p-2.5 rounded-xl bg-[#1a1d24] hover:bg-[#FFD500]/15 border border-[#2d3340] text-left text-xs transition flex items-center justify-between">
+              <div><span class="font-bold text-white block">Danilo Azevedo</span><span class="text-[10px] text-gray-400 font-mono">danilo@hidrosconsultoria.com.br</span></div>
+              <span class="text-[10px] text-[#FFD500]">Usar →</span>
+            </button>
+            <button type="button" onclick="setQuickEmail('mariana@hidrosconsultoria.com.br')" class="w-full p-2.5 rounded-xl bg-[#1a1d24] hover:bg-[#FFD500]/15 border border-[#2d3340] text-left text-xs transition flex items-center justify-between">
+              <div><span class="font-bold text-white block">Mariana Costa</span><span class="text-[10px] text-gray-400 font-mono">mariana@hidrosconsultoria.com.br</span></div>
+              <span class="text-[10px] text-[#FFD500]">Usar →</span>
+            </button>
+            <button type="button" onclick="setQuickEmail('karina.elliot@hidrosconsultoria.com.br')" class="w-full p-2.5 rounded-xl bg-[#1a1d24] hover:bg-[#FFD500]/15 border border-[#2d3340] text-left text-xs transition flex items-center justify-between">
+              <div><span class="font-bold text-white block">Karina Elliot</span><span class="text-[10px] text-gray-400 font-mono">karina.elliot@hidrosconsultoria.com.br</span></div>
+              <span class="text-[10px] text-[#FFD500]">Usar →</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIGURAÇÃO DO GOOGLE SHEETS & APPS SCRIPT -->
+  <div id="sheetsConfigModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-[#121418] border border-[#232730] rounded-3xl w-full max-w-2xl p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button id="btnCloseSheetsConfig" class="absolute top-5 right-5 text-gray-400 hover:text-white p-1 rounded-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-full bg-[#FFD500] text-black flex items-center justify-center font-bold text-sm">
+          H
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Integração com Google Sheets (GP Hidros)</h3>
+          <p class="text-xs text-gray-400">Preenchimento automático do Nome e da Semana na planilha</p>
+        </div>
+      </div>
+
+      <div class="space-y-4 my-4 text-xs text-gray-300">
+        <div class="bg-[#0c0e12] p-4 rounded-2xl border border-[#232730]">
+          <label class="block font-semibold text-white mb-1">URL do Webhook (Apps Script):</label>
+          <input type="text" id="inputWebhookUrl" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full bg-[#181b22] border border-[#2b313d] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#FFD500]">
+          <p class="text-[10px] text-gray-400 mt-1.5">Cole a URL do Apps Script implantado na sua planilha do Google Sheets.</p>
+        </div>
+
+        <div class="bg-[#0c0e12] p-4 rounded-2xl border border-emerald-500/25 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <p class="font-bold text-white text-xs">Automação de Nome e Semana pelo App</p>
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed">
+            O membro não precisa selecionar a semana nem digitar o nome no app. A planilha calcula a <strong class="text-white">Semana do Mês</strong> automaticamente a partir da Data/Hora e busca o <strong class="text-white">Nome do Colaborador</strong> na aba <strong class="text-white">Base_Membros</strong>.
+          </p>
+        </div>
+
+        <div class="rounded-2xl bg-[#181b22] border border-[#232730] p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-[#FFD500] text-xs uppercase tracking-wider">Código Apps Script Atualizado (GP Hidros):</h4>
+            <button id="btnCopyScript" class="text-[11px] text-[#FFD500] hover:underline font-semibold flex items-center gap-1">
+              Copiar Código
+            </button>
+          </div>
+          <pre class="bg-[#0c0e12] p-3 rounded-xl border border-[#232730] text-[10px] font-mono text-[#FFD500] overflow-x-auto max-h-56" id="appsScriptCode">function doPost(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Registro_Presenca") || ss.getActiveSheet();
+    var membrosSheet = ss.getSheetByName("Base_Membros");
+    var data = JSON.parse(e.postData.contents);
+    
+    var email = (data.email || "").toLowerCase().trim();
+    if (!email.endsWith("@hidrosconsultoria.com.br") && !email.endsWith("@gmail.com")) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        "status": "error", 
+        "message": "E-mail não autorizado fora da Hidros." 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // Busca automática do nome na aba Base_Membros a partir do e-mail
+    var nomeColaborador = "Não Cadastrado";
+    if (membrosSheet && membrosSheet.getLastRow() > 4) {
+      var dadosMembros = membrosSheet.getRange(5, 1, membrosSheet.getLastRow() - 4, 2).getValues();
+      for (var i = 0; i < dadosMembros.length; i++) {
+        var emailBase = (dadosMembros[i][0] || "").toString().toLowerCase().trim();
+        if (emailBase === email) {
+          nomeColaborador = dadosMembros[i][1];
+          break;
+        }
+      }
+    }
+
+    // Cálculo da Semana do Mês (Semana 01, Semana 02, etc.)
+    var now = new Date();
+    var dataHoraStr = data.dataHora || now.toLocaleString("pt-BR");
+    var dia = now.getDate();
+    var primeiroDiaMes = new Date(now.getFullYear(), now.getMonth(), 1).getDay(); // 0 Dom, 1 Seg...
+    var primeiroDiaAjustado = (primeiroDiaMes === 0 ? 6 : primeiroDiaMes - 1); // 0 Seg ... 6 Dom
+    var semanaNum = Math.ceil((dia + primeiroDiaAjustado) / 7);
+    var semanaTexto = (data.horarioPlantao === "RG" || data.tipo === "RG") ? "RG" : ("Semana " + (semanaNum < 10 ? "0" + semanaNum : semanaNum));
+    
+    // Cria cabeçalho automático se a planilha estiver vazia
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        "Data e Hora",
+        "E-mail Institucional",
+        "Colaborador",
+        "Semana",
+        "Dia da Semana",
+        "Horário de Plantão",
+        "Tipo de Ponto",
+        "Atraso?",
+        "Justificativa Oficial",
+        "Observação"
+      ]);
+    }
+    
+    // Insere a nova linha com Nome e Semana gerados automaticamente
+    sheet.appendRow([
+      dataHoraStr,
+      data.email,
+      nomeColaborador,
+      semanaTexto,
+      data.diaSemana || "-",
+      data.horarioPlantao || "-",
+      data.tipoFormatado || data.tipo,
+      data.isLate ? "SIM" : "NÃO",
+      data.justificativa || "-",
+      data.observacao || "-"
+    ]);
+    
+    return ContentService.createTextOutput(JSON.stringify({ 
+      "status": "success", 
+      "nome": nomeColaborador,
+      "semana": semanaTexto
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      "status": "error", 
+      "message": error.toString() 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+        </div>
+      </div>
+
+      <div class="flex gap-3 justify-end pt-2">
+        <button id="btnSaveWebhook" class="px-5 py-2.5 rounded-xl bg-[#FFD500] hover:bg-[#e6c000] text-black text-xs font-bold transition">
+          Salvar Configuração
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: COMPROVANTE DE PONTO -->
+  <div id="receiptModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+    <div class="bg-[#121418] border border-[#232730] rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
+      <button id="btnCloseReceipt" class="absolute top-5 right-5 text-gray-400 hover:text-white p-1 rounded-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div class="text-center pb-4 border-b border-[#232730]">
+        <div class="w-12 h-12 mx-auto rounded-full bg-[#FFD500] text-black flex items-center justify-center font-bold text-base mb-2">
+          H
+        </div>
+        <h3 class="text-base font-bold text-white">Comprovante de Ponto Digital</h3>
+        <p class="text-xs text-[#FFD500] font-semibold">Hidros Consultoria — Gestão de Pessoas</p>
+      </div>
+
+      <div class="py-5 space-y-2.5 font-mono text-xs text-gray-300">
+        <div class="flex justify-between">
+          <span class="text-gray-500">E-mail:</span>
+          <span id="rcptEmail" class="font-bold text-[#FFD500]">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Dia da Semana:</span>
+          <span id="rcptDay" class="text-white font-bold">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Horário Plantão:</span>
+          <span id="rcptShiftSlot" class="text-white font-semibold">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Tipo:</span>
+          <span id="rcptType" class="font-bold text-[#FFD500]">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Localização:</span>
+          <span id="rcptLocation" class="font-semibold text-white truncate max-w-[200px]">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Data/Hora:</span>
+          <span id="rcptDateTime">-</span>
+        </div>
+        <div id="rcptLateContainer" class="hidden flex justify-between text-[#FFD500]">
+          <span>Justificativa:</span>
+          <span id="rcptLateReason" class="text-right max-w-[200px] truncate font-bold">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Observação:</span>
+          <span id="rcptNote" class="italic text-gray-400">-</span>
+        </div>
+        <div class="pt-2 border-t border-[#232730] text-[10px] text-gray-500 break-all">
+          <span>Assinatura Digital (Hash):</span>
+          <p id="rcptHash" class="text-gray-400 font-mono mt-0.5">-</p>
+        </div>
+      </div>
+
+      <div class="pt-3 flex gap-2">
+        <button id="btnPrintReceipt" class="flex-1 py-2.5 rounded-xl bg-[#FFD500] hover:bg-[#e6c000] text-black font-bold text-xs transition">
+          Imprimir / Salvar
+        </button>
+        <button id="btnDismissReceipt" class="px-4 py-2.5 rounded-xl bg-[#1c2028] hover:bg-[#282d38] text-gray-300 font-semibold text-xs transition">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- JAVASCRIPT PRINCIPAL -->
+  <script>
+    let synth = null;
+    function playBeep(success = true) {
+      try {
+        if (!synth) {
+          synth = new Tone.PolySynth(Tone.Synth).toDestination();
+          synth.volume.value = -12;
+        }
+        Tone.start();
+        if (success) {
+          synth.triggerAttackRelease(["C5", "G5"], "16n");
+        } else {
+          synth.triggerAttackRelease(["E4", "C4"], "16n");
+        }
+      } catch (err) {}
+    }
+
+    const HIDROS_HEADQUARTERS = {
+      lat: -22.9122,
+      lng: -43.2358,
+      name: "Sede Hidros (UERJ - Bloco F, Sala 5061)"
+    };
+    const GEOFENCE_RADIUS_METERS = 350;
+
+    let currentCoordinates = null;
+    let isWithinGeofence = null;
+    let lastDistanceMeters = null;
+
+    const DEFAULT_SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzXCiAAKXekQfVteYg-GRhH9PPBcSN9rNSCfwke5rWafr8P8y01-Jm0JsDQEd0x8Z8bHA/exec';
+    let sheetsWebhookUrl = localStorage.getItem('ponto_sheets_url') || DEFAULT_SHEETS_WEBHOOK_URL;
+    let currentEmail = localStorage.getItem('ponto_member_email') || '';
+    let selectedLateReason = '';
+    let selectedFaltaReason = '';
+
+    const HIDROS_JUSTIFICATIONS = [
+      "Esquecimento do Horário do Plantão",
+      "Estudo ou Aula",
+      "Atraso por conta do Trânsito",
+      "Atestado médico ou odontológico",
+      "Conflito com outro compromisso extracurricular não relacionado à Hidros",
+      "Participação em reunião, evento ou atividade oficial de EJ",
+      "Compromisso de Representação Institucional",
+      "Atividades de capacitação promovidas pela própria Hidros",
+      "Consulta ou exame médico previamente agendado (com comprovante)",
+      "Mal-estar súbito no momento do plantão",
+      "Situações de emergência familiar",
+      "Casos de força maior de segurança pública",
+      "Desastres naturais ou climáticos que impeçam o deslocamento",
+      "Compromissos pessoais não emergenciais",
+      "Outro"
+    ];
+
+    const DAYS_OF_WEEK = [
+      "Domingo",
+      "Segunda-feira",
+      "Terça-feira",
+      "Quarta-feira",
+      "Quinta-feira",
+      "Sexta-feira",
+      "Sábado"
+    ];
+
+    let punches = JSON.parse(localStorage.getItem('ponto_punches_history')) || [];
+
+    function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371e3;
+      const toRad = (angle) => (angle * Math.PI) / 180;
+      const phi1 = toRad(lat1);
+      const phi2 = toRad(lat2);
+      const deltaPhi = toRad(lat2 - lat1);
+      const deltaLambda = toRad(lon2 - lon1);
+
+      const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                Math.cos(phi1) * Math.cos(phi2) *
+                Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return Math.round(R * c);
+    }
+
+    function getAutoDayOfWeek(date = new Date()) {
+      return DAYS_OF_WEEK[date.getDay()];
+    }
+
+    function updateGeolocationUI(status, distance = null, message = null) {
+      const dot = document.getElementById('geoStatusDot');
+      const text = document.getElementById('geoStatusText');
+      const distText = document.getElementById('geoDistanceText');
+      const btnEntrada = document.getElementById('btnPunchEntrada');
+      const btnSaida = document.getElementById('btnPunchSaida');
+
+      if (status === 'loading') {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0';
+        text.textContent = 'Obtendo localização GPS...';
+        distText.textContent = 'Aguardando validação na Sede UERJ...';
+        btnEntrada.classList.remove('opacity-50', 'cursor-not-allowed');
+        btnSaida.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else if (status === 'inside') {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0';
+        text.textContent = 'Na Sede Hidros (UERJ)';
+        text.className = 'text-emerald-400 font-bold block truncate';
+        distText.textContent = `Aprox. ${distance}m da sala 5061 (Presença confirmada)`;
+        btnEntrada.classList.remove('opacity-50', 'cursor-not-allowed');
+        btnSaida.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else if (status === 'outside') {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0';
+        text.textContent = 'Fora da Sede Hidros';
+        text.className = 'text-rose-400 font-bold block truncate';
+        distText.textContent = `Aprox. ${distance >= 1000 ? (distance / 1000).toFixed(1) + ' km' : distance + ' m'} da UERJ (Raio máx: ${GEOFENCE_RADIUS_METERS}m)`;
+        btnEntrada.classList.add('opacity-50', 'cursor-not-allowed');
+        btnSaida.classList.add('opacity-50', 'cursor-not-allowed');
+      } else if (status === 'denied') {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-gray-500 shrink-0';
+        text.textContent = 'GPS Não Autorizado';
+        text.className = 'text-gray-400 font-medium block truncate';
+        distText.textContent = message || 'Habilite a localização para bater ponto';
+        btnEntrada.classList.add('opacity-50', 'cursor-not-allowed');
+        btnSaida.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    function fetchCurrentPosition(quiet = false) {
+      if (!navigator.geolocation) {
+        updateGeolocationUI('denied', null, 'Navegador sem suporte a GPS');
+        return Promise.resolve(null);
+      }
+
+      updateGeolocationUI('loading');
+
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude, accuracy } = position.coords;
+            currentCoordinates = { latitude, longitude, accuracy };
+            const dist = calculateDistanceMeters(
+              latitude,
+              longitude,
+              HIDROS_HEADQUARTERS.lat,
+              HIDROS_HEADQUARTERS.lng
+            );
+            lastDistanceMeters = dist;
+            isWithinGeofence = dist <= GEOFENCE_RADIUS_METERS;
+
+            if (isWithinGeofence) {
+              updateGeolocationUI('inside', dist);
+              if (!quiet) showToast(`GPS: Presença na Sede confirmada (${dist}m)!`);
+            } else {
+              updateGeolocationUI('outside', dist);
+              if (!quiet) showToast(`GPS: Fora da sede (${dist}m). Ponto presencial bloqueado.`, 'error');
+            }
+            resolve(currentCoordinates);
+          },
+          (error) => {
+            console.warn('Erro GPS:', error);
+            let msg = 'Permissão negada ou GPS indisponível';
+            if (error.code === error.TIMEOUT) msg = 'Tempo esgotado ao buscar GPS';
+            updateGeolocationUI('denied', null, msg);
+            resolve(null);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+        );
+      });
+    }
+
+    const TYPE_CONFIG = {
+      ENTRADA: {
+        label: 'Entrada',
+        bg: 'bg-emerald-500/15',
+        text: 'text-emerald-400',
+        border: 'border-emerald-500/30',
+        dot: 'bg-emerald-400'
+      },
+      ENTRADA_ATRASO: {
+        label: 'Entrada c/ Atraso',
+        bg: 'bg-[#FFD500]/20',
+        text: 'text-[#FFD500]',
+        border: 'border-[#FFD500]/40',
+        dot: 'bg-[#FFD500]'
+      },
+      SAIDA: {
+        label: 'Saída',
+        bg: 'bg-blue-500/15',
+        text: 'text-blue-400',
+        border: 'border-blue-500/30',
+        dot: 'bg-blue-400'
+      },
+      FALTA: {
+        label: 'Falta',
+        bg: 'bg-rose-500/20',
+        text: 'text-rose-400',
+        border: 'border-rose-500/40',
+        dot: 'bg-rose-400'
+      }
+    };
+
+    function updateClock() {
+      const current = new Date();
+      const h = String(current.getHours()).padStart(2, '0');
+      const m = String(current.getMinutes()).padStart(2, '0');
+      const s = String(current.getSeconds()).padStart(2, '0');
+      const liveClock = document.getElementById('liveClock');
+      if (liveClock) liveClock.textContent = `${h}:${m}:${s}`;
+
+      const options = { day: 'numeric', month: 'long', year: 'numeric' };
+      const dateString = current.toLocaleDateString('pt-BR', options);
+      const dateEl = document.getElementById('todayDateDisplay');
+      if (dateEl) dateEl.textContent = dateString;
+
+      const dayOfWeekBadge = document.getElementById('autoDayOfWeekBadge');
+      if (dayOfWeekBadge) dayOfWeekBadge.textContent = getAutoDayOfWeek(current);
+
+      evaluateShiftTolerance(current);
+    }
+    setInterval(updateClock, 1000);
+
+    function evaluateShiftTolerance(nowDate = new Date()) {
+      const slotSelect = document.getElementById('selectShiftSlot');
+      if (!slotSelect || !slotSelect.options || slotSelect.selectedIndex < 0) {
+        return { isLate: false, delayMinutes: 0 };
+      }
+      const selectedOption = slotSelect.options[slotSelect.selectedIndex];
+      const startStr = selectedOption ? selectedOption.getAttribute('data-start') : '';
+      const toleranceStatusEl = document.getElementById('shiftToleranceStatus');
+      const alertBlock = document.getElementById('autoLateAlert');
+      const alertDetailText = document.getElementById('autoLateDetailText');
+      const btnEntradaLabel = document.getElementById('btnEntradaLabel');
+      const checkIsLate = document.getElementById('checkIsLate');
+
+      if (!startStr || selectedOption.value === 'RG' || !selectedOption.value) {
+        toleranceStatusEl.textContent = selectedOption.value === 'RG' ? 'Evento / RG' : 'Tolerância: 10 min';
+        toleranceStatusEl.className = 'text-[10px] px-2 py-0.2 rounded font-semibold bg-gray-800 text-gray-400';
+        alertBlock.classList.add('hidden');
+        btnEntradaLabel.textContent = 'Bater Ponto: ENTRADA';
+        return { isLate: false, delayMinutes: 0 };
+      }
+
+      const [startHour, startMin] = startStr.split(':').map(Number);
+      const shiftStartTime = new Date(nowDate);
+      shiftStartTime.setHours(startHour, startMin, 0, 0);
+
+      const toleranceEndTime = new Date(shiftStartTime.getTime() + 10 * 60 * 1000);
+      const diffMs = nowDate.getTime() - shiftStartTime.getTime();
+      const diffMinutes = Math.floor(diffMs / 60000);
+
+      if (nowDate > toleranceEndTime) {
+        toleranceStatusEl.textContent = `Atraso: +${diffMinutes} min`;
+        toleranceStatusEl.className = 'text-[10px] px-2 py-0.2 rounded font-bold bg-[#FFD500]/20 text-[#FFD500] border border-[#FFD500]/40';
+        alertBlock.classList.remove('hidden');
+        alertDetailText.textContent = `Início às ${startStr}. Tolerância encerrou às ${String(toleranceEndTime.getHours()).padStart(2, '0')}:${String(toleranceEndTime.getMinutes()).padStart(2, '0')}. Atraso de ${diffMinutes} min.`;
+        btnEntradaLabel.textContent = 'Bater Ponto: ENTRADA COM ATRASO';
+
+        if (!checkIsLate.checked && !checkIsLate.dataset.manualUncheck) {
+          checkIsLate.checked = true;
+          toggleLateBlock(true);
+        }
+
+        return { isLate: true, delayMinutes: diffMinutes, shiftStartStr: startStr };
+      } else {
+        if (diffMinutes < 0) {
+          toleranceStatusEl.textContent = `Início em ${Math.abs(diffMinutes)} min`;
+          toleranceStatusEl.className = 'text-[10px] px-2 py-0.2 rounded font-semibold bg-emerald-900/30 text-emerald-400 border border-emerald-500/20';
+        } else {
+          toleranceStatusEl.textContent = `Tolerância: restam ${10 - diffMinutes} min`;
+          toleranceStatusEl.className = 'text-[10px] px-2 py-0.2 rounded font-semibold bg-emerald-900/40 text-emerald-300 border border-emerald-500/30';
+        }
+        alertBlock.classList.add('hidden');
+        btnEntradaLabel.textContent = 'Bater Ponto: ENTRADA';
+        return { isLate: false, delayMinutes: 0, shiftStartStr: startStr };
+      }
+    }
+
+    function populateJustificationLists() {
+      const lateContainer = document.getElementById('lateReasonListContainer');
+      const faltaContainer = document.getElementById('faltaReasonListContainer');
+
+      let lateHtml = '';
+      let faltaHtml = '';
+
+      HIDROS_JUSTIFICATIONS.forEach((reason) => {
+        lateHtml += `
+          <button type="button" data-reason="${reason}" class="reason-tag w-full p-2 rounded-xl text-[11px] font-medium bg-[#161920] hover:bg-[#FFD500]/15 hover:text-[#FFD500] border border-[#2b313d] text-gray-300 transition text-left truncate flex items-center justify-between">
+            <span class="truncate">${reason}</span>
+            <span class="text-xs text-gray-500">→</span>
+          </button>
+        `;
+
+        faltaHtml += `
+          <button type="button" data-falta-reason="${reason}" class="falta-reason-tag w-full p-2.5 rounded-xl text-[11px] font-medium bg-[#161920] hover:bg-rose-500/20 hover:text-rose-300 border border-[#2b313d] text-gray-300 transition text-left flex items-center justify-between">
+            <span>${reason}</span>
+            <span class="text-xs text-gray-500">✓</span>
+          </button>
+        `;
+      });
+
+      lateContainer.innerHTML = lateHtml;
+      faltaContainer.innerHTML = faltaHtml;
+
+      lateContainer.querySelectorAll('.reason-tag').forEach(btn => {
+        btn.addEventListener('click', () => {
+          lateContainer.querySelectorAll('.reason-tag').forEach(b => {
+            b.classList.remove('bg-[#FFD500]/25', 'text-[#FFD500]', 'border-[#FFD500]', 'font-bold');
+            b.classList.add('text-gray-300', 'bg-[#161920]');
+          });
+          btn.classList.add('bg-[#FFD500]/25', 'text-[#FFD500]', 'border-[#FFD500]', 'font-bold');
+          btn.classList.remove('text-gray-300', 'bg-[#161920]');
+          selectedLateReason = btn.getAttribute('data-reason');
+        });
+      });
+
+      faltaContainer.querySelectorAll('.falta-reason-tag').forEach(btn => {
+        btn.addEventListener('click', () => {
+          faltaContainer.querySelectorAll('.falta-reason-tag').forEach(b => {
+            b.classList.remove('bg-rose-500/30', 'text-rose-300', 'border-rose-500', 'font-bold');
+            b.classList.add('text-gray-300', 'bg-[#161920]');
+          });
+          btn.classList.add('bg-rose-500/30', 'text-rose-300', 'border-rose-500', 'font-bold');
+          btn.classList.remove('text-gray-300', 'bg-[#161920]');
+          selectedFaltaReason = btn.getAttribute('data-falta-reason');
+        });
+      });
+    }
+
+    function toggleLateBlock(show) {
+      const block = document.getElementById('lateDetailsBlock');
+      if (show) {
+        block.classList.remove('hidden');
+      } else {
+        block.classList.add('hidden');
+        selectedLateReason = '';
+        document.getElementById('lateReasonCustom').value = '';
+        document.querySelectorAll('#lateReasonListContainer .reason-tag').forEach(b => {
+          b.classList.remove('bg-[#FFD500]/25', 'text-[#FFD500]', 'border-[#FFD500]', 'font-bold');
+        });
+      }
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold backdrop-blur-md transform transition-all duration-300 translate-y-4 opacity-0 ${
+        type === 'success' ? 'bg-[#121418] text-[#FFD500] border-[#FFD500]/40' : 'bg-rose-950 text-rose-200 border-rose-800'
+      }`;
+
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${type === 'success' ? 'bg-[#FFD500]' : 'bg-rose-400'}"></span>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.remove('translate-y-4', 'opacity-0'));
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 4500);
+    }
+
+    function generateHash(timestamp, email, type) {
+      const raw = `${timestamp}-${email}-${type}-${Math.random().toString(36).substring(2)}`;
+      let hash = 0;
+      for (let i = 0; i < raw.length; i++) {
+        hash = (hash << 5) - hash + raw.charCodeAt(i);
+        hash |= 0;
+      }
+      return 'HIDROS-' + Math.abs(hash).toString(16).padStart(8, '0').toUpperCase();
+    }
+
+    function getTodayPunchesForUser() {
+      if (!currentEmail) return [];
+      const today = new Date().toISOString().split('T')[0];
+      return punches.filter(p => p.email.toLowerCase() === currentEmail.toLowerCase() && p.timestamp.startsWith(today))
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    }
+
+    function determineNextPunchType() {
+      const logs = getTodayPunchesForUser();
+      if (logs.length === 0) return 'ENTRADA';
+      const last = logs[logs.length - 1];
+      if (last.type === 'ENTRADA' || last.type === 'ENTRADA_ATRASO') return 'SAIDA';
+      return 'ENTRADA';
+    }
+
+    function updateUIState() {
+      const emailEl = document.getElementById('currentUserEmailDisplay');
+      const btnLogout = document.getElementById('btnLogout');
+      const quickInput = document.getElementById('inputQuickEmail');
+
+      if (currentEmail) {
+        emailEl.textContent = currentEmail;
+        quickInput.value = currentEmail;
+        btnLogout.classList.remove('hidden');
+      } else {
+        emailEl.textContent = 'Identifique seu e-mail';
+        quickInput.value = '';
+        btnLogout.classList.add('hidden');
+      }
+
+      const nextType = determineNextPunchType();
+      const badgeEntrada = document.getElementById('badgeSuggestEntrada');
+      const badgeSaida = document.getElementById('badgeSuggestSaida');
+      if (badgeEntrada && badgeSaida) {
+        if (nextType === 'ENTRADA') {
+          badgeEntrada.classList.remove('hidden');
+          badgeSaida.classList.add('hidden');
+        } else {
+          badgeEntrada.classList.add('hidden');
+          badgeSaida.classList.remove('hidden');
+        }
+      }
+
+      const statusBadge = document.getElementById('statusBadge');
+      const todayLogs = getTodayPunchesForUser();
+
+      if (todayLogs.length === 0) {
+        statusBadge.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#1c2028] text-gray-400 border border-[#2b313d]';
+        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-gray-400"></span><span>Jornada Não Iniciada</span>';
+      } else {
+        const last = todayLogs[todayLogs.length - 1];
+        if (last.type === 'ENTRADA' || last.type === 'ENTRADA_ATRASO') {
+          statusBadge.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#FFD500]/20 text-[#FFD500] border border-[#FFD500]/30';
+          statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-[#FFD500] animate-ping"></span><span>Ativo no Plantão</span>';
+        } else if (last.type === 'FALTA') {
+          statusBadge.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+          statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-400"></span><span>Falta Registrada</span>';
+        } else {
+          statusBadge.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#1c2028] text-gray-300 border border-[#2b313d]';
+          statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-gray-400"></span><span>Jornada Finalizada</span>';
+        }
+      }
+
+      renderTodayTimeline();
+      renderPunchesTable();
+    }
+
+    function renderTodayTimeline() {
+      const timelineEl = document.getElementById('todayTimeline');
+      const todayLogs = getTodayPunchesForUser();
+
+      if (todayLogs.length === 0) {
+        timelineEl.innerHTML = `<div class="text-center py-6 text-gray-500 text-xs font-medium">Nenhum ponto registrado hoje para este e-mail.</div>`;
+        document.getElementById('totalWorkedToday').textContent = '00h 00m';
+        return;
+      }
+
+      let html = '';
+      todayLogs.forEach(p => {
+        const dateObj = new Date(p.timestamp);
+        const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const cfg = TYPE_CONFIG[p.type] || TYPE_CONFIG.ENTRADA;
+
+        const lateTag = p.isLate
+          ? `<span class="inline-flex items-center gap-1 text-[10px] text-[#FFD500] font-bold bg-[#FFD500]/10 px-2 py-0.5 rounded-md border border-[#FFD500]/30">⚠️ Atraso</span>` 
+          : '';
+
+        html += `
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-[#0c0e12] border border-[#232730]">
+            <div class="flex items-center gap-3">
+              <span class="w-2.5 h-2.5 rounded-full ${cfg.dot}"></span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <p class="text-xs font-semibold text-white">${cfg.label}</p>
+                  <span class="text-[10px] text-gray-400 font-mono">(${p.shiftSlot || 'Plantão'})</span>
+                  ${lateTag}
+                </div>
+                <p class="text-[11px] text-gray-400 font-mono">${timeStr} • ${p.diaSemana || ''}</p>
+                ${p.justificativa && p.justificativa !== '-' ? `<p class="text-[10px] text-[#FFD500]/90 italic mt-0.5 truncate max-w-xs">"${p.justificativa}"</p>` : ''}
+              </div>
+            </div>
+            <button onclick="viewReceipt('${p.id}')" class="text-xs text-[#FFD500] hover:underline font-semibold px-2.5 py-1 rounded-lg bg-[#FFD500]/10 transition">
+              Comprovante
+            </button>
+          </div>
+        `;
+      });
+      timelineEl.innerHTML = html;
+
+      let totalMins = 0;
+      let checkIn = null;
+      todayLogs.forEach(p => {
+        const t = new Date(p.timestamp).getTime();
+        if (p.type === 'ENTRADA' || p.type === 'ENTRADA_ATRASO') {
+          checkIn = t;
+        } else if (p.type === 'SAIDA') {
+          if (checkIn) {
+            totalMins += Math.floor((t - checkIn) / 60000);
+            checkIn = null;
+          }
+        }
+      });
+      if (checkIn) {
+        totalMins += Math.floor((Date.now() - checkIn) / 60000);
+      }
+
+      const hrs = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+      document.getElementById('totalWorkedToday').textContent = `${String(hrs).padStart(2, '0')}h ${String(mins).padStart(2, '0')}m`;
+    }
+
+    async function sendPunchToGoogleSheets(punchObj) {
+      if (!sheetsWebhookUrl) return false;
+
+      const d = new Date(punchObj.timestamp);
+      const dataHora = `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR')}`;
+
+      const payload = {
+        id: punchObj.id,
+        email: punchObj.email,
+        diaSemana: punchObj.diaSemana,
+        horarioPlantao: punchObj.shiftSlotLabel,
+        tipo: punchObj.type,
+        tipoFormatado: TYPE_CONFIG[punchObj.type]?.label || punchObj.type,
+        dataHora: dataHora,
+        localizacao: punchObj.location || 'Sede UERJ',
+        isLate: !!punchObj.isLate,
+        justificativa: punchObj.justificativa || '-',
+        observacao: punchObj.note || '-',
+        hash: punchObj.hash
+      };
+
+      try {
+        await fetch(sheetsWebhookUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        punchObj.syncedSheets = true;
+        localStorage.setItem('ponto_punches_history', JSON.stringify(punches));
+        renderPunchesTable();
+        return true;
+      } catch (err) {
+        console.error('Erro de envio ao Sheets:', err);
+        return false;
+      }
+    }
+
+    function getFullJustificationText() {
+      const customText = document.getElementById('lateReasonCustom').value.trim();
+      if (selectedLateReason && customText) {
+        return `${selectedLateReason}: ${customText}`;
+      }
+      return selectedLateReason || customText || '';
+    }
+
+    async function directPunch(actionType) {
+      const emailInput = document.getElementById('inputQuickEmail');
+      const emailVal = emailInput ? emailInput.value.trim().toLowerCase() : currentEmail;
+
+      if (!emailVal || !emailVal.includes('@')) {
+        showToast('Por favor, informe seu e-mail institucional antes de bater ponto.', 'error');
+        if (emailInput) emailInput.focus();
+        return;
+      }
+
+      currentEmail = emailVal;
+      localStorage.setItem('ponto_member_email', emailVal);
+
+      // Validação Geográfica Obrigatória no Core (Presença na Sede UERJ)
+      if (!currentCoordinates) {
+        await fetchCurrentPosition(true);
+      }
+
+      if (!currentCoordinates || isWithinGeofence === false) {
+        playBeep(false);
+        const msg = lastDistanceMeters !== null
+          ? `Registro bloqueado: você está a ${lastDistanceMeters >= 1000 ? (lastDistanceMeters / 1000).toFixed(1) + ' km' : lastDistanceMeters + ' m'} da Sede Hidros (UERJ). É obrigatório estar no campus (raio de ${GEOFENCE_RADIUS_METERS}m).`
+          : 'Registro bloqueado: sinal de GPS não obtido. É obrigatório autorizar a localização e estar na Sede Hidros (UERJ).';
+        showToast(msg, 'error');
+        return;
+      }
+
+      const slotSelect = document.getElementById('selectShiftSlot');
+      const selectedSlotValue = slotSelect.value;
+      const selectedSlotOption = slotSelect.options[slotSelect.selectedIndex];
+      const slotLabel = selectedSlotOption ? selectedSlotOption.textContent.trim() : '';
+
+      if (!selectedSlotValue) {
+        showToast('Por favor, selecione seu horário de plantão antes de bater ponto.', 'error');
+        slotSelect.focus();
+        return;
+      }
+
+      localStorage.setItem('ponto_last_slot', selectedSlotValue);
+
+      const now = new Date();
+      const diaSemana = getAutoDayOfWeek(now);
+      const toleranceEval = evaluateShiftTolerance(now);
+
+      let finalType = actionType;
+      let isLateDeclared = document.getElementById('checkIsLate').checked;
+      let isLateAuto = toleranceEval.isLate;
+
+      if (actionType === 'ENTRADA' && (isLateAuto || isLateDeclared)) {
+        finalType = 'ENTRADA_ATRASO';
+      }
+
+      let justificativa = '';
+      if (finalType === 'ENTRADA_ATRASO') {
+        justificativa = getFullJustificationText();
+        if (!justificativa) {
+          playBeep(false);
+          document.getElementById('checkIsLate').checked = true;
+          toggleLateBlock(true);
+          showToast('Atraso superior a 10 min: Justificativa é obrigatória!', 'error');
+          return;
+        }
+      }
+
+      const noteInput = document.getElementById('punchNoteInput');
+      const note = noteInput ? noteInput.value.trim() : '';
+      const locationLabel = `Sede UERJ (${lastDistanceMeters}m)`;
+
+      const newPunch = {
+        id: 'p-' + Date.now(),
+        email: currentEmail,
+        diaSemana: diaSemana,
+        shiftSlot: selectedSlotValue,
+        shiftSlotLabel: slotLabel,
+        type: finalType,
+        timestamp: now.toISOString(),
+        location: locationLabel,
+        isWithinSede: true,
+        coordinates: currentCoordinates,
+        isLate: (finalType === 'ENTRADA_ATRASO'),
+        justificativa: justificativa || '-',
+        note: note || '-',
+        hash: generateHash(now.toISOString(), currentEmail, finalType),
+        syncedSheets: false
+      };
+
+      punches.unshift(newPunch);
+      localStorage.setItem('ponto_punches_history', JSON.stringify(punches));
+
+      playBeep(true);
+
+      if (noteInput) noteInput.value = '';
+      document.getElementById('checkIsLate').checked = false;
+      document.getElementById('checkIsLate').dataset.manualUncheck = '';
+      toggleLateBlock(false);
+
+      showToast(finalType === 'ENTRADA_ATRASO' 
+        ? `Entrada com atraso registrada para ${currentEmail}!` 
+        : `Ponto registrado com sucesso: ${TYPE_CONFIG[finalType]?.label || finalType}!`);
+
+      updateUIState();
+      viewReceipt(newPunch.id);
+
+      if (sheetsWebhookUrl) {
+        const ok = await sendPunchToGoogleSheets(newPunch);
+        if (ok) showToast('Linha enviada ao Sheets! Nome e Semana vinculados automaticamente.');
+      }
+    }
+
+    function openFaltaModal() {
+      const emailInput = document.getElementById('inputQuickEmail');
+      const emailVal = emailInput ? emailInput.value.trim().toLowerCase() : currentEmail;
+
+      if (!emailVal || !emailVal.includes('@')) {
+        showToast('Informe seu e-mail institucional antes de registrar falta.', 'error');
+        if (emailInput) emailInput.focus();
+        return;
+      }
+
+      currentEmail = emailVal;
+      localStorage.setItem('ponto_member_email', emailVal);
+
+      const slotSelect = document.getElementById('selectShiftSlot');
+      const selectedSlotValue = slotSelect.value;
+      const selectedSlotOption = slotSelect.options[slotSelect.selectedIndex];
+      const slotLabel = selectedSlotOption && selectedSlotValue ? selectedSlotOption.textContent.trim() : 'Plantão';
+
+      document.getElementById('faltaModalEmail').textContent = currentEmail;
+      document.getElementById('faltaModalDay').textContent = getAutoDayOfWeek(new Date());
+      document.getElementById('faltaModalSlot').textContent = slotLabel;
+
+      selectedFaltaReason = '';
+      document.getElementById('faltaCustomNote').value = '';
+      document.querySelectorAll('#faltaReasonListContainer .falta-reason-tag').forEach(b => {
+        b.classList.remove('bg-rose-500/30', 'text-rose-300', 'border-rose-500', 'font-bold');
+      });
+
+      const modal = document.getElementById('faltaModal');
+      modal.classList.remove('hidden');
+      requestAnimationFrame(() => modal.classList.remove('opacity-0'));
+    }
+
+    function closeFaltaModal() {
+      const modal = document.getElementById('faltaModal');
+      modal.classList.add('opacity-0');
+      setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+
+    async function confirmFaltaRegistration() {
+      const customNote = document.getElementById('faltaCustomNote').value.trim();
+      if (!selectedFaltaReason && !customNote) {
+        showToast('É obrigatório justificar o motivo da falta.', 'error');
+        return;
+      }
+
+      const slotSelect = document.getElementById('selectShiftSlot');
+      const selectedSlotValue = slotSelect.value || 'N/A';
+      const selectedSlotOption = slotSelect.options[slotSelect.selectedIndex];
+      const slotLabel = selectedSlotOption ? selectedSlotOption.textContent.trim() : 'Plantão';
+
+      const now = new Date();
+      const diaSemana = getAutoDayOfWeek(now);
+      const fullJustification = selectedFaltaReason ? (customNote ? `${selectedFaltaReason}: ${customNote}` : selectedFaltaReason) : customNote;
+
+      const newPunch = {
+        id: 'p-' + Date.now(),
+        email: currentEmail,
+        diaSemana: diaSemana,
+        shiftSlot: selectedSlotValue,
+        shiftSlotLabel: slotLabel,
+        type: 'FALTA',
+        timestamp: now.toISOString(),
+        location: 'Ausente (Falta Registrada)',
+        isWithinSede: false,
+        coordinates: null,
+        isLate: false,
+        justificativa: fullJustification,
+        note: customNote || 'Falta comunicada pelo membro',
+        hash: generateHash(now.toISOString(), currentEmail, 'FALTA'),
+        syncedSheets: false
+      };
+
+      punches.unshift(newPunch);
+      localStorage.setItem('ponto_punches_history', JSON.stringify(punches));
+
+      playBeep(true);
+      closeFaltaModal();
+      showToast('Falta com justificativa registrada com sucesso.');
+
+      updateUIState();
+      viewReceipt(newPunch.id);
+
+      if (sheetsWebhookUrl) {
+        const ok = await sendPunchToGoogleSheets(newPunch);
+        if (ok) showToast('Falta e justificativa sincronizadas no Google Sheets!');
+      }
+    }
+
+    function renderPunchesTable() {
+      const search = (document.getElementById('filterSearch').value || '').toLowerCase();
+      const typeVal = document.getElementById('filterType').value;
+      const dateVal = document.getElementById('filterDate').value;
+      const tbody = document.getElementById('punchesTableBody');
+      const empty = document.getElementById('tableEmptyState');
+
+      const filtered = punches.filter(p => {
+        const matchSearch = p.email.toLowerCase().includes(search) || 
+                            (p.shiftSlotLabel && p.shiftSlotLabel.toLowerCase().includes(search)) ||
+                            (p.justificativa && p.justificativa.toLowerCase().includes(search));
+
+        let matchType = true;
+        if (typeVal !== 'ALL') {
+          matchType = (p.type === typeVal);
+        }
+
+        const matchDate = !dateVal || p.timestamp.startsWith(dateVal);
+        return matchSearch && matchType && matchDate;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        empty.classList.remove('hidden');
+        empty.classList.add('flex');
+        return;
+      }
+
+      empty.classList.add('hidden');
+      empty.classList.remove('flex');
+
+      let rows = '';
+      filtered.forEach(p => {
+        const d = new Date(p.timestamp);
+        const timeStr = d.toLocaleTimeString('pt-BR');
+        const dateStr = d.toLocaleDateString('pt-BR');
+        const cfg = TYPE_CONFIG[p.type] || TYPE_CONFIG.ENTRADA;
+
+        const sheetsBadge = p.syncedSheets
+          ? '<span class="inline-flex items-center gap-1 text-[11px] text-[#FFD500] font-semibold">✓ Enviado</span>'
+          : '<span class="inline-flex items-center gap-1 text-[11px] text-gray-500">Pendente</span>';
+
+        const delayBadge = p.isLate
+          ? `<span class="inline-flex items-center text-[10px] text-[#FFD500] font-bold bg-[#FFD500]/15 px-2 py-0.5 rounded border border-[#FFD500]/30">SIM</span>`
+          : `<span class="text-[10px] text-gray-500">NÃO</span>`;
+
+        rows += `
+          <tr class="hover:bg-[#181b22] transition">
+            <td class="py-3 px-3 font-mono">
+              <span class="font-bold text-white">${timeStr}</span>
+              <span class="block text-[10px] text-[#FFD500]">${p.diaSemana || getAutoDayOfWeek(d)}</span>
+              <span class="block text-[10px] text-gray-500">${dateStr}</span>
+            </td>
+            <td class="py-3 px-3">
+              <div class="font-semibold text-white font-mono text-[11px] truncate max-w-[170px]">${p.email}</div>
+              <div class="text-[10px] text-gray-400">Nome via Base de Dados</div>
+            </td>
+            <td class="py-3 px-3">
+              <div class="font-bold text-[#FFD500] text-[11px]">${p.shiftSlot || '-'}</div>
+            </td>
+            <td class="py-3 px-3">
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${cfg.bg} ${cfg.text} border ${cfg.border}">
+                <span class="w-1.5 h-1.5 rounded-full ${cfg.dot}"></span>
+                ${cfg.label}
+              </span>
+            </td>
+            <td class="py-3 px-3">
+              ${delayBadge}
+            </td>
+            <td class="py-3 px-3 max-w-[180px] text-[11px]">
+              ${p.justificativa && p.justificativa !== '-' ? `<div class="font-medium text-white truncate" title="${p.justificativa}">${p.justificativa}</div>` : '<span class="text-gray-600 italic">-</span>'}
+            </td>
+            <td class="py-3 px-3 text-center">
+              ${sheetsBadge}
+            </td>
+            <td class="py-3 px-3 text-right">
+              <button onclick="viewReceipt('${p.id}')" class="p-1.5 rounded-lg bg-[#1c2028] hover:bg-[#282d38] text-gray-300 hover:text-white transition" title="Ver Comprovante">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = rows;
+    }
+
+    window.viewReceipt = function(id) {
+      const p = punches.find(item => item.id === id);
+      if (!p) return;
+
+      const d = new Date(p.timestamp);
+      document.getElementById('rcptEmail').textContent = p.email;
+      document.getElementById('rcptDay').textContent = p.diaSemana || getAutoDayOfWeek(d);
+      document.getElementById('rcptShiftSlot').textContent = p.shiftSlotLabel || p.shiftSlot || '-';
+      document.getElementById('rcptType').textContent = TYPE_CONFIG[p.type]?.label || p.type;
+      document.getElementById('rcptLocation').textContent = p.location || 'Sede UERJ';
+      document.getElementById('rcptDateTime').textContent = `${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR')}`;
+      document.getElementById('rcptNote').textContent = p.note || 'Nenhuma';
+      document.getElementById('rcptHash').textContent = p.hash;
+
+      const lateRow = document.getElementById('rcptLateContainer');
+      if (p.justificativa && p.justificativa !== '-') {
+        lateRow.classList.remove('hidden');
+        document.getElementById('rcptLateReason').textContent = p.justificativa;
+      } else {
+        lateRow.classList.add('hidden');
+      }
+
+      const modal = document.getElementById('receiptModal');
+      modal.classList.remove('hidden');
+      requestAnimationFrame(() => modal.classList.remove('opacity-0'));
+    };
+
+    function exportToCSV() {
+      if (punches.length === 0) {
+        showToast('Nenhum registro para exportar!', 'error');
+        return;
+      }
+
+      let csv = 'Data e Hora;E-mail Institucional;Dia da Semana;Horario Plantao;Tipo de Ponto;Atraso;Justificativa;Observacao;Localizacao;Hash\r\n';
+      punches.forEach(p => {
+        const dt = new Date(p.timestamp).toLocaleString('pt-BR');
+        csv += `"${dt}";"${p.email}";"${p.diaSemana || '-'}";"${p.shiftSlot || '-'}";"${TYPE_CONFIG[p.type]?.label || p.type}";${p.isLate ? 'SIM' : 'NAO'};"${(p.justificativa || '-').replace(/"/g, '""')}";"${(p.note || '-').replace(/"/g, '""')}";"${p.location || '-'}";${p.hash}\r\n`;
+      });
+
+      const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ponto_hidros_gp_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Relatório exportado em CSV!');
+    }
+
+    window.setQuickEmail = function(email) {
+      currentEmail = email;
+      localStorage.setItem('ponto_member_email', email);
+      closeEmailModal();
+      updateUIState();
+      showToast(`E-mail definido: ${email}`);
+    };
+
+    function openEmailModal() {
+      document.getElementById('modalInputEmail').value = currentEmail;
+      const m = document.getElementById('emailModal');
+      m.classList.remove('hidden');
+      requestAnimationFrame(() => m.classList.remove('opacity-0'));
+    }
+
+    function closeEmailModal() {
+      const m = document.getElementById('emailModal');
+      m.classList.add('opacity-0');
+      setTimeout(() => m.classList.add('hidden'), 200);
+    }
+
+    function openSheetsModal() {
+      document.getElementById('inputWebhookUrl').value = sheetsWebhookUrl;
+      const m = document.getElementById('sheetsConfigModal');
+      m.classList.remove('hidden');
+      requestAnimationFrame(() => m.classList.remove('opacity-0'));
+    }
+
+    function closeSheetsModal() {
+      const m = document.getElementById('sheetsConfigModal');
+      m.classList.add('opacity-0');
+      setTimeout(() => m.classList.add('hidden'), 200);
+    }
+
+    function updateSheetsUIStatus() {
+      const dot = document.getElementById('sheetsStatusDot');
+      const text = document.getElementById('sheetsStatusText');
+      const banner = document.getElementById('sheetsSyncAlert');
+
+      if (sheetsWebhookUrl) {
+        dot.className = 'w-2 h-2 rounded-full bg-[#FFD500] animate-pulse';
+        text.textContent = 'Sheets: Conectado';
+        banner.className = 'rounded-2xl p-4 border transition flex items-center justify-between bg-[#121418] border-[#FFD500]/50';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        text.textContent = 'Sheets: Não Conectado';
+        banner.className = 'rounded-2xl p-4 border transition flex items-center justify-between bg-[#121418] border-[#232730]';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      populateJustificationLists();
+
+      const savedSlot = localStorage.getItem('ponto_last_slot');
+      if (savedSlot) {
+        document.getElementById('selectShiftSlot').value = savedSlot;
+      }
+
+      document.getElementById('inputQuickEmail').addEventListener('change', (e) => {
+        const val = e.target.value.trim().toLowerCase();
+        if (val) {
+          currentEmail = val;
+          localStorage.setItem('ponto_member_email', val);
+          updateUIState();
+        }
+      });
+
+      document.getElementById('btnPunchEntrada').addEventListener('click', () => directPunch('ENTRADA'));
+      document.getElementById('btnPunchSaida').addEventListener('click', () => directPunch('SAIDA'));
+
+      document.getElementById('btnOpenFaltaModal').addEventListener('click', openFaltaModal);
+      document.getElementById('btnCloseFaltaModal').addEventListener('click', closeFaltaModal);
+      document.getElementById('btnCancelFalta').addEventListener('click', closeFaltaModal);
+      document.getElementById('btnConfirmFalta').addEventListener('click', confirmFaltaRegistration);
+
+      document.getElementById('selectShiftSlot').addEventListener('change', () => {
+        evaluateShiftTolerance();
+      });
+
+      document.getElementById('btnRefreshLocation').addEventListener('click', () => {
+        fetchCurrentPosition(false);
+      });
+
+      document.getElementById('checkIsLate').addEventListener('change', (e) => {
+        if (!e.target.checked) {
+          e.target.dataset.manualUncheck = 'true';
+        } else {
+          e.target.dataset.manualUncheck = '';
+        }
+        toggleLateBlock(e.target.checked);
+      });
+
+      document.getElementById('btnLogout').addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentEmail = '';
+        localStorage.removeItem('ponto_member_email');
+        updateUIState();
+        showToast('E-mail removido.');
+      });
+
+      document.getElementById('userProfileBadge').addEventListener('click', openEmailModal);
+      document.getElementById('btnCloseEmailModal').addEventListener('click', closeEmailModal);
+      document.getElementById('btnSaveEmail').addEventListener('click', () => {
+        const val = document.getElementById('modalInputEmail').value.trim().toLowerCase();
+        if (val && val.includes('@')) {
+          setQuickEmail(val);
+        } else {
+          showToast('Informe um e-mail válido.', 'error');
+        }
+      });
+
+      document.getElementById('btnOpenSheetsConfig').addEventListener('click', openSheetsModal);
+      document.getElementById('btnBannerConfig').addEventListener('click', openSheetsModal);
+      document.getElementById('btnCloseSheetsConfig').addEventListener('click', closeSheetsModal);
+
+      document.getElementById('btnSaveWebhook').addEventListener('click', () => {
+        const val = document.getElementById('inputWebhookUrl').value.trim();
+        sheetsWebhookUrl = val;
+        localStorage.setItem('ponto_sheets_url', val);
+        updateSheetsUIStatus();
+        closeSheetsModal();
+        showToast(val ? 'Google Sheets sincronizado!' : 'Integração desativada.');
+      });
+
+      document.getElementById('btnCopyScript').addEventListener('click', () => {
+        const code = document.getElementById('appsScriptCode').innerText;
+        navigator.clipboard.writeText(code).then(() => {
+          showToast('Código Apps Script copiado!');
+        });
+      });
+
+      document.getElementById('btnCloseReceipt').addEventListener('click', () => {
+        const m = document.getElementById('receiptModal');
+        m.classList.add('opacity-0');
+        setTimeout(() => m.classList.add('hidden'), 200);
+      });
+      document.getElementById('btnDismissReceipt').addEventListener('click', () => {
+        const m = document.getElementById('receiptModal');
+        m.classList.add('opacity-0');
+        setTimeout(() => m.classList.add('hidden'), 200);
+      });
+      document.getElementById('btnPrintReceipt').addEventListener('click', () => window.print());
+
+      document.getElementById('filterSearch').addEventListener('input', renderPunchesTable);
+      document.getElementById('filterType').addEventListener('change', renderPunchesTable);
+      document.getElementById('filterDate').addEventListener('change', renderPunchesTable);
+      document.getElementById('btnExportCsv').addEventListener('click', exportToCSV);
+
+      updateClock();
+      updateUIState();
+      updateSheetsUIStatus();
+
+      setTimeout(() => fetchCurrentPosition(true), 800);
+
+      if (!currentEmail) {
+        setTimeout(openEmailModal, 400);
+      }
+    });
+  </script>
+</body>
+</html>
