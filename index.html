@@ -10,43 +10,9 @@
   <meta name="apple-mobile-web-app-title" content="Ponto Hidros">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%2308090b'/%3E%3Ccircle cx='256' cy='256' r='220' fill='%23FFD500'/%3E%3Cg fill='%2308090b'%3E%3Cpolygon points='166,110 216,110 236,145 236,402 166,402'/%3E%3Cpolygon points='296,145 316,110 366,110 366,402 296,402'/%3E%3Cpolygon points='236,260 296,260 296,315 236,315'/%3E%3C/g%3E%3C/svg%3E">
 
-  <script>
-  /* App instalável (Android e iPhone): gera ícone e manifesto direto no aparelho */
-  (function () {
-    try {
-      var icon = function (n) {
-        var c = document.createElement('canvas'); c.width = c.height = n;
-        var x = c.getContext('2d'), k = n / 100;
-        x.fillStyle = '#FFD500'; x.fillRect(0, 0, n, n);
-        x.fillStyle = '#08090b';
-        [[[28,15],[38,15],[42,22],[42,85],[28,85]], [[58,22],[62,15],[72,15],[72,85],[58,85]], [[42,52],[58,52],[58,63],[42,63]]].forEach(function (poly) {
-          x.beginPath();
-          poly.forEach(function (p, i) { var px = (15 + p[0] * 0.7) * k, py = (15 + p[1] * 0.7) * k; i ? x.lineTo(px, py) : x.moveTo(px, py); });
-          x.closePath(); x.fill();
-        });
-        return c.toDataURL('image/png');
-      };
-      var add = function (rel, href, sizes) {
-        var l = document.createElement('link'); l.rel = rel; l.href = href;
-        if (sizes) l.sizes = sizes; document.head.appendChild(l);
-      };
-      add('apple-touch-icon', icon(180), '180x180');
-      add('icon', icon(192), '192x192');
-      var m = {
-        name: 'Ponto Digital - Hidros Consultoria', short_name: 'Ponto Hidros',
-        description: 'Ponto digital e plantões da Hidros Consultoria',
-        start_url: './', scope: './', display: 'standalone', orientation: 'portrait',
-        background_color: '#08090b', theme_color: '#FFD500',
-        icons: [
-          { src: icon(192), sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: icon(512), sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: icon(512), sizes: '512x512', type: 'image/png', purpose: 'maskable' }
-        ]
-      };
-      add('manifest', 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(m)));
-    } catch (e) {}
-  })();
-  </script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 
   <title>Ponto Digital - Hidros Consultoria</title>
 
@@ -584,18 +550,19 @@ function setSheetStatus(state) {
   txt.textContent = m[2];
 }
 
-async function pingSheet(quiet = true) {
+async function pingSheet(quiet = true, retrying = false) {
   if (!webhookReady()) { sheetOnline = false; setSheetStatus('unset'); if (!quiet) toast('Cole a URL do Apps Script no topo do código (WEBHOOK_URL).', 'err'); return false; }
   setSheetStatus('loading');
   try {
-    const res = await fetch(`${CONFIG.WEBHOOK_URL}?t=${Date.now()}`);
+    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 25000);
+    let res; try { res = await fetch(`${CONFIG.WEBHOOK_URL}?t=${Date.now()}`, { signal: ctl.signal }); } finally { clearTimeout(tm); }
     const r = await res.json();
     if (r.status !== 'online') throw new Error('Resposta inesperada');
     sheetOnline = true; setSheetStatus('ok');
     if (!quiet) toast('Conexão com a planilha funcionando!');
     return true;
   } catch (e) {
-    sheetOnline = false; setSheetStatus('off');
+    sheetOnline = false; setSheetStatus(retrying ? 'loading' : 'off');
     if (!quiet) toast('Sem conexão com a planilha agora. Seu ponto fica salvo no aparelho e é reenviado sozinho quando voltar.', 'err');
     return false;
   }
@@ -647,6 +614,14 @@ async function syncOne(p) {
   if (r === 'pending') p.sync = 'pending';
   savePunches(); renderAll();
   return r;
+}
+
+// Tenta conectar sozinho: o Google pode demorar na primeira chamada ("script dormindo"). Mostra "Planilha..." e tenta de novo até conectar.
+async function autoPing(n = 0) {
+  const ok = await pingSheet(true, n < 8);
+  if (ok) { retryPending(true); return true; }
+  if (n < 8) { setTimeout(() => autoPing(n + 1), 3000); } else { setSheetStatus('off'); }
+  return false;
 }
 
 async function retryPending(quiet = false) {
@@ -1021,7 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Reenvia pendentes quando a internet voltar
-  window.addEventListener('online', async () => { if (await pingSheet()) retryPending(true); });
+  window.addEventListener('online', () => { autoPing(0); });
 
   updatePunchButtons('loading');
   tick(); setInterval(tick, 1000);
@@ -1029,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderAll();
   setTimeout(() => fetchPosition(true), 700);
   setInterval(() => fetchPosition(true, true), 60000);
-  pingSheet().then(ok => { if (ok) retryPending(true); });
+  autoPing(0);
   if (!currentEmail) setTimeout(openEmailModal, 400);
 });
 </script>
