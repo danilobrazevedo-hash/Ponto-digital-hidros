@@ -351,8 +351,8 @@ const store = {
 };
 const pad = n => String(n).padStart(2, '0');
 const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; // data LOCAL (não UTC)
-const keyToDate = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
-const fmtKey = k => { const [y, m, d] = k.split('-'); return `${d}/${m}/${y}`; };
+const keyToDate = k => { if (typeof k !== 'string' || k.indexOf('-') < 0) return new Date(); const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const fmtKey = k => { if (typeof k !== 'string' || k.indexOf('-') < 0) return ''; const [y, m, d] = k.split('-'); return `${d}/${m}/${y}`; };
 
 // Plantão no formato da planilha: "T5-T6 (16:10 - 18:00)"
 const slotLabel = code => { const s = SLOTS.find(x => x[0] === code); return s ? `${s[0]} (${s[1]} - ${s[2]})` : (code || '-'); };
@@ -552,7 +552,7 @@ function setSheetStatus(state) {
 
 async function pingSheet(quiet = true, retrying = false) {
   if (!webhookReady()) { sheetOnline = false; setSheetStatus('unset'); if (!quiet) toast('Cole a URL do Apps Script no topo do código (WEBHOOK_URL).', 'err'); return false; }
-  setSheetStatus('loading');
+  if (!retrying) setSheetStatus('loading');
   try {
     const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 25000);
     let res; try { res = await fetch(`${CONFIG.WEBHOOK_URL}?t=${Date.now()}`, { signal: ctl.signal }); } finally { clearTimeout(tm); }
@@ -562,7 +562,7 @@ async function pingSheet(quiet = true, retrying = false) {
     if (!quiet) toast('Conexão com a planilha funcionando!');
     return true;
   } catch (e) {
-    sheetOnline = false; setSheetStatus(retrying ? 'loading' : 'off');
+    sheetOnline = false; if (!retrying) setSheetStatus('off');
     if (!quiet) toast('Sem conexão com a planilha agora. Seu ponto fica salvo no aparelho e é reenviado sozinho quando voltar.', 'err');
     return false;
   }
@@ -618,6 +618,7 @@ async function syncOne(p) {
 
 // Tenta conectar sozinho: o Google pode demorar na primeira chamada ("script dormindo"). Mostra "Planilha..." e tenta de novo até conectar.
 async function autoPing(n = 0) {
+  if (n === 0 && webhookReady()) { sheetOnline = true; setSheetStatus('ok'); } // abre já conectado; confirma em segundo plano
   const ok = await pingSheet(true, n < 8);
   if (ok) { retryPending(true); return true; }
   if (n < 8) { setTimeout(() => autoPing(n + 1), 3000); } else { setSheetStatus('off'); }
@@ -713,10 +714,11 @@ async function createPunch(type, justificativa = '', refDate = null) {
     punches.unshift(p);
     savePunches();
     $('noteInput').value = '';
-    beep(true);
+    // O comprovante abre PRIMEIRO. Som e redesenho vêm depois e, se falharem, não impedem o comprovante.
+    try { showReceipt(p.id); } catch (e) { console.error('comprovante', e); }
+    try { beep(true); } catch (e) {}
     toast(type === 'FALTA' ? `Falta registrada para ${DAYS[ref.getDay()]}, ${fmtKey(p.dayKey)}.` : `${TYPES[type].label} registrada com sucesso!`);
-    renderAll();
-    showReceipt(p.id);
+    try { renderAll(); } catch (e) { console.error('renderAll', e); }
 
     const r = await syncOne(p);
     if (r === 'ok') toast('✓ Gravado na planilha!');
@@ -917,7 +919,7 @@ function showReceipt(id) {
   const row = (k, v) => `<div class="flex justify-between gap-3"><span class="text-gray-500">${k}</span><span class="text-right text-white font-semibold break-all">${v}</span></div>`;
   $('receiptBody').innerHTML =
     row('E-mail:', esc(p.email)) + (p.type === 'FALTA' ? row('Dia da falta:', `${esc(p.diaSemana)}, ${fmtKey(p.dayKey)}`) : row('Dia:', esc(p.diaSemana))) + row('Plantão:', esc(p.shiftLabel || p.shiftSlot)) +
-    row('Tipo:', TYPES[p.type].label) + row('Local:', esc(p.location)) +
+    row('Tipo:', (TYPES[p.type] || { label: p.type }).label) + row('Local:', esc(p.location)) +
     row('Data/Hora:', `${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR')}`) +
     (p.justificativa ? row('Justificativa:', esc(p.justificativa)) : '') +
     row('Observação:', esc(p.note || 'Nenhuma')) +
