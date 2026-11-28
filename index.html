@@ -133,15 +133,6 @@
         </div>
       </div>
 
-      <!-- Planilha -->
-      <div class="p-4 rounded-2xl bg-[#0c0e12] border border-[#FFD500]/40 flex items-center justify-between gap-3 text-xs">
-        <div class="min-w-0">
-          <p class="font-bold text-white text-sm truncate">📊 Planilha de Novembro - 2026</p>
-          <p id="sheetSub" class="text-[11px] text-gray-400 truncate">Aba: Respostas do Aplicativo</p>
-        </div>
-        <button id="btnOpenSheet" type="button" class="px-3.5 py-2.5 rounded-xl bg-[#FFD500] hover:bg-[#e6c000] text-black font-black text-xs shrink-0 active:scale-95 transition">Abrir Planilha</button>
-      </div>
-
       <!-- GPS -->
       <div class="mt-3 py-3 px-4 rounded-2xl bg-[#0c0e12] border border-[#232730] flex items-center justify-between text-xs">
         <div class="flex items-center gap-3 min-w-0">
@@ -264,9 +255,26 @@
     <label class="block text-xs font-semibold text-gray-300 mt-3 mb-1">Detalhes complementares (opcional):</label>
     <textarea id="reasonNote" rows="2" placeholder="Descreva brevemente a situação..." class="w-full bg-[#181b22] border border-[#2b313d] rounded-xl p-3 text-xs placeholder-gray-500 focus:outline-none focus:border-[#FFD500]"></textarea>
     <div class="flex gap-3 justify-end pt-4 mt-3 border-t border-[#232730]">
+      <button id="reasonBack" type="button" class="hidden mr-auto px-4 py-2.5 rounded-xl bg-[#1c2028] text-gray-300 text-xs font-semibold">← Trocar dia</button>
       <button type="button" data-close="reasonModal" class="px-4 py-2.5 rounded-xl bg-[#1c2028] text-gray-300 text-xs font-semibold">Cancelar</button>
       <button id="reasonConfirm" type="button" class="px-5 py-2.5 rounded-xl text-xs font-extrabold"></button>
     </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: DIA DA FALTA ============ -->
+<div id="dayModal" class="modal fixed inset-0 z-50 hidden opacity-0 items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+  <div class="bg-[#121418] border border-rose-500/40 rounded-3xl w-full max-w-lg p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+    <button type="button" data-close="dayModal" class="absolute top-4 right-5 text-gray-400 hover:text-white text-xl">✕</button>
+    <h3 class="text-base font-bold mb-1">⚠️ Em qual dia será a falta?</h3>
+    <p class="text-xs text-rose-300 font-medium mb-3">Toque no dia da semana que você vai faltar</p>
+    <div class="flex items-center justify-between mb-3 bg-[#0c0e12] border border-[#232730] rounded-2xl px-2 py-1.5">
+      <button id="dayPrev" type="button" class="w-10 h-9 rounded-xl bg-[#1c2028] text-lg font-bold text-gray-200 active:scale-95">‹</button>
+      <span id="dayWeekLabel" class="text-xs font-bold text-gray-200 text-center"></span>
+      <button id="dayNext" type="button" class="w-10 h-9 rounded-xl bg-[#1c2028] text-lg font-bold text-gray-200 active:scale-95">›</button>
+    </div>
+    <div id="dayCards" class="space-y-2"></div>
+    <p class="text-[11px] text-gray-500 mt-3">Plantão: <span id="daySlot" class="font-bold text-gray-300"></span> (para trocar, feche e mude o plantão na tela inicial)</p>
   </div>
 </div>
 
@@ -377,6 +385,38 @@ const store = {
 };
 const pad = n => String(n).padStart(2, '0');
 const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; // data LOCAL (não UTC)
+const keyToDate = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const fmtKey = k => { const [y, m, d] = k.split('-'); return `${d}/${m}/${y}`; };
+
+// Plantão no formato da planilha: "T5-T6 (16:10 - 18:00)"
+const slotLabel = code => { const s = SLOTS.find(x => x[0] === code); return s ? `${s[0]} (${s[1]} - ${s[2]})` : (code || '-'); };
+
+// Semana do mês no formato "3ª Semana (16/11 a 20/11)".
+// As semanas são blocos de segunda a sexta, recortados nos limites do mês.
+// Ex.: novembro/2026 → 1ª: 02/11 a 06/11 ... 5ª: apenas 30/11.
+function weekLabel(date) {
+  let d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  if (d.getDay() === 6) d.setDate(d.getDate() - 1);               // sábado → sexta
+  else if (d.getDay() === 0) {                                     // domingo → segunda (ou sexta anterior, se virar o mês)
+    const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+    d = next.getMonth() === d.getMonth() ? next : new Date(d.getFullYear(), d.getMonth(), d.getDate() - 2);
+  }
+  const y = d.getFullYear(), m = d.getMonth(), last = new Date(y, m + 1, 0).getDate();
+  const mondayKey = x => { const t = new Date(y, m, x); return dayKey(new Date(y, m, x - ((t.getDay() + 6) % 7))); };
+  const weeks = [];
+  for (let x = 1; x <= last; x++) {
+    const dow = new Date(y, m, x).getDay();
+    if (dow === 0 || dow === 6) continue;
+    const k = mondayKey(x);
+    let w = weeks.find(o => o.key === k);
+    if (!w) { w = { key: k, first: x, last: x }; weeks.push(w); }
+    w.last = x;
+  }
+  const found = weeks.findIndex(o => o.key === mondayKey(d.getDate()));
+  const i = found >= 0 ? found : 0, w = weeks[i];
+  const f = n => `${pad(n)}/${pad(m + 1)}`;
+  return `${i + 1}ª Semana (${w.first === w.last ? f(w.first) : `${f(w.first)} a ${f(w.last)}`})`;
+}
 const webhookReady = () => /^https:\/\/script\.google\.com\/.+\/exec$/.test(CONFIG.WEBHOOK_URL);
 const nameOf = email => { const m = MEMBERS.find(x => x[1] === (email || '').toLowerCase()); return m ? m[0] : ''; };
 const weekOfMonth = (d = new Date()) => {
@@ -425,6 +465,8 @@ let busy = false;
 let sheetOnline = null; // null = verificando, true/false
 let reasonMode = null;  // 'ATRASO' | 'FALTA'
 let reasonChosen = '';
+let faltaWeek = 0;      // 0 = semana padrão; -1/+1 = semana anterior/seguinte
+let faltaDay = null;    // Date do dia escolhido para a falta
 
 /* =====================================================================
    RELÓGIO E TOLERÂNCIA
@@ -554,7 +596,7 @@ async function pingSheet(quiet = true) {
     return true;
   } catch (e) {
     sheetOnline = false; setSheetStatus('off');
-    if (!quiet) toast('Não foi possível falar com o script. Confira a URL e se o acesso está como "Qualquer pessoa".', 'err');
+    if (!quiet) toast('Sem conexão com a planilha agora. Seu ponto fica salvo no aparelho e é reenviado sozinho quando voltar.', 'err');
     return false;
   }
 }
@@ -573,7 +615,9 @@ async function sendToSheet(p) {
     tipo: p.type,
     tipoFormatado: TYPES[p.type].label,
     dataHora: `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR')}`,
-    semanaNum: weekOfMonth(d),
+    semanaNum: weekOfMonth(keyToDate(p.dayKey)),
+    semanaTexto: p.shiftSlot === 'RG' ? 'Mês Inteiro' : weekLabel(keyToDate(p.dayKey)),
+    horarioPlantaoTexto: slotLabel(p.shiftSlot),
     justificativa: p.justificativa || '',
     observacao: p.note || '',
     hash: p.hash
@@ -665,20 +709,21 @@ async function ensureInsideHQ() {
   return true;
 }
 
-async function createPunch(type, justificativa = '') {
+async function createPunch(type, justificativa = '', refDate = null) {
   if (busy) return;
   busy = true;
   try {
     if (type !== 'FALTA' && !(await ensureInsideHQ())) return;
 
     const now = new Date();
+    const ref = refDate || now; // dia a que o registro se refere (na falta, o dia escolhido)
     const slot = selectedSlot();
     store.set('ponto_last_slot', slot[0]);
     const p = {
       id: 'p-' + now.getTime(),
       email: currentEmail,
-      dayKey: dayKey(now),
-      diaSemana: DAYS[now.getDay()],
+      dayKey: dayKey(ref),
+      diaSemana: DAYS[ref.getDay()],
       shiftSlot: slot[0],
       shiftLabel: $('slotSelect').selectedOptions[0].textContent.trim(),
       type,
@@ -694,7 +739,7 @@ async function createPunch(type, justificativa = '') {
     savePunches();
     $('noteInput').value = '';
     beep(true);
-    toast(`${TYPES[type].label} registrada com sucesso!`);
+    toast(type === 'FALTA' ? `Falta registrada para ${DAYS[ref.getDay()]}, ${fmtKey(p.dayKey)}.` : `${TYPES[type].label} registrada com sucesso!`);
     renderAll();
     showReceipt(p.id);
 
@@ -726,7 +771,47 @@ async function onAtraso() {
   if (!(await ensureInsideHQ())) return;
   openReason('ATRASO');
 }
-function onFalta() { if (requireIdentity() && requireSlot()) openReason('FALTA'); }
+function onFalta() { if (requireIdentity() && requireSlot()) openFaltaDays(); }
+
+/* =====================================================================
+   FALTA: ESCOLHA DO DIA DA SEMANA (ligada ao calendário real)
+   ===================================================================== */
+// Segunda-feira da semana exibida. Sábado e domingo mostram a semana seguinte.
+function mondayOfWeek(offset) {
+  const t = new Date(), dow = t.getDay();
+  const delta = dow === 0 ? 1 : dow === 6 ? 2 : -(dow - 1);
+  return new Date(t.getFullYear(), t.getMonth(), t.getDate() + delta + offset * 7);
+}
+
+function renderFaltaDays() {
+  const mon = mondayOfWeek(faltaWeek);
+  const today = new Date(), todayKey = dayKey(today);
+  const thisMon = new Date(today.getFullYear(), today.getMonth(), today.getDate() - ((today.getDay() + 6) % 7));
+  const diff = Math.round((mon - thisMon) / 604800000);
+  const tag = { '0': 'Esta semana', '1': 'Próxima semana', '-1': 'Semana passada' }[String(diff)] || '';
+  const short = d => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+  const fri = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 4);
+  $('dayWeekLabel').innerHTML = `${short(mon)} a ${short(fri)}${tag ? ` <span class="text-[#FFD500]">• ${tag}</span>` : ''}`;
+  $('daySlot').textContent = $('slotSelect').selectedOptions[0].textContent.trim();
+  const pill = (txt, cls) => `<span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${cls}">${txt}</span>`;
+  $('dayCards').innerHTML = [0, 1, 2, 3, 4].map(i => {
+    const d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i), key = dayKey(d);
+    const hasFalta = punches.some(p => p.email === currentEmail && p.type === 'FALTA' && p.dayKey === key);
+    const hasPresence = punches.some(p => p.email === currentEmail && (p.type === 'ENTRADA' || p.type === 'ENTRADA_ATRASO') && p.dayKey === key);
+    let badge = '', disabled = false;
+    if (hasFalta) { badge = pill('Falta já registrada', 'bg-rose-500/20 text-rose-300'); disabled = true; }
+    else if (hasPresence) { badge = pill('Presença já registrada', 'bg-emerald-500/15 text-emerald-300'); disabled = true; }
+    else if (key === todayKey) badge = pill('Hoje', 'bg-[#FFD500]/20 text-[#FFD500]');
+    else if (key < todayKey) badge = pill('Já passou', 'bg-gray-700/60 text-gray-300');
+    return `<button type="button" data-fday="${key}" ${disabled ? 'disabled' : ''} class="w-full flex items-center justify-between gap-3 p-3.5 rounded-2xl border-2 bg-[#161920] text-left transition ${disabled ? 'border-[#2b313d] opacity-40 cursor-not-allowed' : 'border-[#2b313d] hover:border-rose-500 active:scale-[0.98]'}">
+      <span><span class="block text-sm font-black">${DAYS[d.getDay()]}</span><span class="block text-[11px] text-gray-400 font-mono">${short(d)}/${d.getFullYear()}</span></span>
+      ${badge}
+    </button>`;
+  }).join('');
+}
+
+function openFaltaDays() { faltaWeek = 0; renderFaltaDays(); openModal('dayModal'); }
+function pickFaltaDay(key) { faltaDay = keyToDate(key); closeModal('dayModal'); openReason('FALTA'); }
 
 /* =====================================================================
    MODAL DE JUSTIFICATIVA (usado por Atraso e Falta)
@@ -741,7 +826,8 @@ function openReason(mode) {
   btn.textContent = late ? 'Confirmar Entrada c/ Atraso →' : 'Confirmar Falta';
   btn.className = `px-5 py-2.5 rounded-xl text-xs font-extrabold ${late ? 'bg-[#FFD500] hover:bg-[#e6c000] text-black' : 'bg-rose-600 hover:bg-rose-500 text-white'}`;
   $('rmEmail').textContent = currentEmail;
-  $('rmDay').textContent = DAYS[new Date().getDay()];
+  $('rmDay').textContent = (late || !faltaDay) ? DAYS[new Date().getDay()] : `${DAYS[faltaDay.getDay()]}, ${fmtKey(dayKey(faltaDay))}`;
+  $('reasonBack').classList.toggle('hidden', late);
   $('rmSlot').textContent = $('slotSelect').selectedOptions[0].textContent.trim();
   const tol = evalTolerance(), dl = $('rmDelay');
   if (late && tol.isLate) { dl.textContent = `Atraso apurado: +${tol.delay} min (início às ${tol.start}).`; dl.classList.remove('hidden'); } else dl.classList.add('hidden');
@@ -761,7 +847,7 @@ async function confirmReason() {
   const text = reasonChosen ? (extra ? `${reasonChosen}: ${extra}` : reasonChosen) : extra;
   const mode = reasonMode;
   closeModal('reasonModal');
-  await createPunch(mode === 'ATRASO' ? 'ENTRADA_ATRASO' : 'FALTA', text);
+  await createPunch(mode === 'ATRASO' ? 'ENTRADA_ATRASO' : 'FALTA', text, mode === 'FALTA' ? faltaDay : null);
 }
 
 /* =====================================================================
@@ -834,7 +920,7 @@ function renderTable() {
   $('tableBody').innerHTML = rows.map(p => {
     const d = new Date(p.timestamp), cfg = TYPES[p.type];
     return `<tr class="hover:bg-[#181b22]">
-      <td class="py-3 px-3 font-mono"><span class="font-bold text-white">${d.toLocaleTimeString('pt-BR')}</span><span class="block text-[10px] text-[#FFD500]">${esc(p.diaSemana)}</span><span class="block text-[10px] text-gray-500">${d.toLocaleDateString('pt-BR')}</span></td>
+      <td class="py-3 px-3 font-mono"><span class="font-bold text-white">${d.toLocaleTimeString('pt-BR')}</span><span class="block text-[10px] text-[#FFD500]">${esc(p.diaSemana)}</span><span class="block text-[10px] text-gray-500">${d.toLocaleDateString('pt-BR')}</span>${p.type === 'FALTA' && p.dayKey !== dayKey(d) ? `<span class="block text-[10px] font-bold text-rose-300">Falta de ${fmtKey(p.dayKey)}</span>` : ''}</td>
       <td class="py-3 px-3 font-mono text-[11px] truncate max-w-[160px]">${esc(p.email)}</td>
       <td class="py-3 px-3 font-bold text-[#FFD500] text-[11px]">${esc(p.shiftSlot)}</td>
       <td class="py-3 px-3"><span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${cfg.bg} ${cfg.text} border ${cfg.border}"><span class="w-1.5 h-1.5 rounded-full ${cfg.dot}"></span>${cfg.label}</span></td>
@@ -855,7 +941,7 @@ function showReceipt(id) {
   const d = new Date(p.timestamp);
   const row = (k, v) => `<div class="flex justify-between gap-3"><span class="text-gray-500">${k}</span><span class="text-right text-white font-semibold break-all">${v}</span></div>`;
   $('receiptBody').innerHTML =
-    row('E-mail:', esc(p.email)) + row('Dia:', esc(p.diaSemana)) + row('Plantão:', esc(p.shiftLabel || p.shiftSlot)) +
+    row('E-mail:', esc(p.email)) + (p.type === 'FALTA' ? row('Dia da falta:', `${esc(p.diaSemana)}, ${fmtKey(p.dayKey)}`) : row('Dia:', esc(p.diaSemana))) + row('Plantão:', esc(p.shiftLabel || p.shiftSlot)) +
     row('Tipo:', TYPES[p.type].label) + row('Local:', esc(p.location)) +
     row('Data/Hora:', `${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR')}`) +
     (p.justificativa ? row('Justificativa:', esc(p.justificativa)) : '') +
@@ -903,17 +989,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const last = store.get('ponto_last_slot', '');
   if (last) $('slotSelect').value = last;
 
-  $('sheetSub').textContent = `Aba: ${CONFIG.SHEET_TAB}`;
-
   // Botões
   $('btnEntrada').addEventListener('click', onEntrada);
   $('btnSaida').addEventListener('click', onSaida);
   $('btnAtraso').addEventListener('click', onAtraso);
   $('btnFalta').addEventListener('click', onFalta);
+  $('dayPrev').addEventListener('click', () => { if (faltaWeek > -8) { faltaWeek--; renderFaltaDays(); } });
+  $('dayNext').addEventListener('click', () => { if (faltaWeek < 8) { faltaWeek++; renderFaltaDays(); } });
+  $('reasonBack').addEventListener('click', () => { closeModal('reasonModal'); renderFaltaDays(); openModal('dayModal'); });
   $('reasonConfirm').addEventListener('click', confirmReason);
   $('slotSelect').addEventListener('change', () => evalTolerance());
   $('btnGps').addEventListener('click', () => fetchPosition(false));
-  $('btnOpenSheet').addEventListener('click', () => window.open(CONFIG.SHEET_URL, '_blank'));
   $('sheetChip').addEventListener('click', () => pingSheet(false));
   $('btnRetry').addEventListener('click', () => retryPending(false));
   $('btnPrint').addEventListener('click', () => window.print());
@@ -931,6 +1017,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rc = e.target.closest('[data-receipt]'); if (rc) showReceipt(rc.dataset.receipt);
     const em = e.target.closest('[data-email]'); if (em) setEmail(em.dataset.email);
     const tab = e.target.closest('[data-tab]'); if (tab) switchTab(tab.dataset.tab);
+    const fd = e.target.closest('[data-fday]'); if (fd && !fd.disabled) pickFaltaDay(fd.dataset.fday);
   });
 
   // Reenvia pendentes quando a internet voltar
